@@ -20,6 +20,21 @@ using DocumentFormat.OpenXml.Packaging;
 
 namespace OpenXmlPowerTools
 {
+            public class ScriptLanguage
+    {
+
+        public static string JavaScript;
+        public static string TCL;
+        public static string VBScript;
+
+        static ScriptLanguage()
+        {
+            JavaScript = "text/javascript";
+            VBScript = "text/vbscript;";
+            TCL = "text/tcl";
+        }
+    }
+    
     public partial class WmlDocument
     {
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -39,6 +54,9 @@ namespace OpenXmlPowerTools
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Global")]
     public class WmlToHtmlConverterSettings
     {
+        public string Script;
+        public string ScriptLanguage;
+        public bool UseContentControlElement;
         public string PageTitle;
         public string CssClassPrefix;
         public bool FabricateCssClasses;
@@ -51,6 +69,9 @@ namespace OpenXmlPowerTools
 
         public WmlToHtmlConverterSettings()
         {
+            Script = "";
+            ScriptLanguage = "";
+            UseContentControlElement = true;
             PageTitle = "";
             CssClassPrefix = "pt-";
             FabricateCssClasses = true;
@@ -63,6 +84,9 @@ namespace OpenXmlPowerTools
 
         public WmlToHtmlConverterSettings(HtmlConverterSettings htmlConverterSettings)
         {
+            Script = htmlConverterSettings.Script;
+            ScriptLanguage = htmlConverterSettings.ScriptLanguageToUse;
+            UseContentControlElement = htmlConverterSettings.UseContentControlElement;
             PageTitle = htmlConverterSettings.PageTitle;
             CssClassPrefix = htmlConverterSettings.CssClassPrefix;
             FabricateCssClasses = htmlConverterSettings.FabricateCssClasses;
@@ -78,6 +102,9 @@ namespace OpenXmlPowerTools
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Global")]
     public class HtmlConverterSettings
     {
+        public string Script;
+        public string ScriptLanguageToUse;
+        public bool UseContentControlElement;
         public string PageTitle;
         public string CssClassPrefix;
         public bool FabricateCssClasses;
@@ -90,6 +117,9 @@ namespace OpenXmlPowerTools
 
         public HtmlConverterSettings()
         {
+            Script = "";
+            UseContentControlElement = true;
+            ScriptLanguageToUse = "";
             PageTitle = "";
             CssClassPrefix = "pt-";
             FabricateCssClasses = true;
@@ -149,7 +179,7 @@ namespace OpenXmlPowerTools
             SimplifyMarkupSettings simplifyMarkupSettings = new SimplifyMarkupSettings
             {
                 RemoveComments = true,
-                RemoveContentControls = true,
+                RemoveContentControls = false,
                 RemoveEndAndFootNotes = true,
                 RemoveFieldCodes = false,
                 RemoveLastRenderedPageBreak = true,
@@ -678,6 +708,20 @@ namespace OpenXmlPowerTools
         private static object ProcessContentControl(WordprocessingDocument wordDoc, WmlToHtmlConverterSettings settings,
             XElement element, decimal currentMarginLeft)
         {
+             /* -- New Section
+             Added by John Wallace (GitHub: https://github.com/wallacesigma LinkedIn: https://www.linkedin.com/in/WallacesSigma) 28-09-2021 
+             to allow conversion of Content Control to unique <cc> element. This creates the ability to manipulate Content Controls using HTML, JavaScriptand/or  CSS */
+
+            if (settings.UseContentControlElement)
+            {
+                if (element.Value == null || element.Value == "")
+                {
+                    return "<cc>x-x-x-x<cc/>";
+                }
+                return "<cc>" + element.Value + "<cc/>";
+            }
+            // - End of New Section
+            
             var relevantAncestors = element.Ancestors().TakeWhile(a => a.Name != W.txbxContent);
             var isRunLevelContentControl = relevantAncestors.Any(a => a.Name == W.p);
             if (isRunLevelContentControl)
